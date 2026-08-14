@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(uuid())
+  name         String
+  email        String        @unique
+  password     String
+  role         Role          @default(USER)
+  createdAt    DateTime      @default(now())
+  subjects     Subject[]
+  quizzes      QuizResult[]
+  reviews      Review[]
+  achievements Achievement[]
+  statistics   Statistics?
+}
+
+model Subject {
+  id        String   @id @default(uuid())
+  name      String
+  color     String   @default("#4F46E5")
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessons   Lesson[]
+  createdAt DateTime @default(now())
+}
+
+model Lesson {
+  id         String      @id @default(uuid())
+  title      String
+  content    String?
+  subjectId  String
+  subject    Subject     @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  flashcards Flashcard[]
+  createdAt  DateTime    @default(now())
+}
+
+model Flashcard {
+  id       String @id @default(uuid())
+  question String
+  answer   String
+  lessonId String
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+}
+
+model QuizResult {
+  id        String   @id @default(uuid())
+  score     Int
+  total     Int
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  subjectId String
+  rating    Int
+  comment   String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Achievement {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  icon        String   @default("🏆")
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model Statistics {
+  id               String   @id @default(uuid())
+  totalStudyHours  Float    @default(0)
+  streakDays       Int      @default(0)
+  lessonsCompleted Int      @default(0)
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  updatedAt        DateTime @updatedAt
+}
+
+enum Role {
+  USER
+  ADMIN
+}
