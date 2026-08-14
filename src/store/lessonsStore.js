@@ -58,20 +58,32 @@ export const useLessonsStore = create((set, get) => ({
 
   updateLesson: async (id, data) => {
     try {
+      // Clean undefined values - Supabase rejects undefined
+      const cleanData = Object.fromEntries(
+        Object.entries(data).filter(([_, v]) => v !== undefined),
+      );
+
       const { data: updated, error } = await supabase
         .from("lessons")
-        .update(data)
+        .update({ ...cleanData, updated_at: new Date().toISOString() })
         .eq("id", id)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase update error:", error);
+        throw error;
+      }
+
       set((state) => ({
         lessons: state.lessons.map((l) => (l.id === id ? updated : l)),
         currentLesson:
           state.currentLesson?.id === id ? updated : state.currentLesson,
       }));
+
+      return updated;
     } catch (error) {
+      console.error("Update lesson error:", error);
       set({ error: error.message });
       throw error;
     }
@@ -81,7 +93,10 @@ export const useLessonsStore = create((set, get) => ({
     try {
       const { data: updated, error } = await supabase
         .from("lessons")
-        .update({ is_favorite: !currentStatus })
+        .update({
+          is_favorite: !currentStatus,
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", id)
         .select()
         .single();
